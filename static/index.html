@@ -1,0 +1,1626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CEnT-S &amp; IELTS Enterprise LMS v4.0</title>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- MathJax -->
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)'], ['$', '$']], displayMath: [['\\[', '\\]']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --surface: #111827;
+      --surface2: #1f2937;
+      --surface3: #283548;
+      --border: #374151;
+      --accent: #6366f1;
+      --accent-hover: #4f46e5;
+      --accent-soft: rgba(99, 102, 241, 0.14);
+      --success: #10b981;
+      --success-soft: rgba(16, 185, 129, 0.14);
+      --warning: #f59e0b;
+      --warning-soft: rgba(245, 158, 11, 0.14);
+      --danger: #ef4444;
+      --danger-soft: rgba(239, 68, 68, 0.14);
+      --text: #f9fafb;
+      --text2: #9ca3af;
+      --radius: 10px;
+      --sidebar-w: 264px;
+      --sidebar-rail: 70px;
+      --header-h: 62px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.55;
+      overflow-x: hidden;
+    }
+    button { cursor: pointer; border: none; outline: none; font-family: inherit; }
+    input, select, textarea { font-family: inherit; }
+
+    /* ── App Shell (Sidebar + Main) ─────────────────────────── */
+    #app-shell { display: flex; min-height: 100vh; width: 100%; }
+
+    /* ── Sidebar Navigation (Fixed Clipping Issue) ──────────── */
+    #sidebar {
+      width: var(--sidebar-w);
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      z-index: 200;
+      transition: width 0.22s ease, transform 0.22s ease;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+    #sidebar.collapsed { width: var(--sidebar-rail); }
+    #sidebar.collapsed .nav-label,
+    #sidebar.collapsed .brand-text,
+    #sidebar.collapsed .nav-section-title,
+    #sidebar.collapsed .nav-badge { display: none !important; }
+    #sidebar.collapsed .sidebar-brand { justify-content: center; padding: 0 8px; }
+    #sidebar.collapsed .brand-logo { display: none; }
+    #sidebar.collapsed #sidebar-toggle-btn svg { transform: rotate(180deg); }
+    #sidebar.collapsed .nav-btn { justify-content: center; padding: 12px 0; }
+
+    .sidebar-brand {
+      height: var(--header-h);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      gap: 8px;
+    }
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      font-size: 0.96rem;
+      color: var(--text);
+      min-width: 0;
+      overflow: hidden;
+    }
+    .brand-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--accent), #8b5cf6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: 800;
+      font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+    .brand-text {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .ver-pill {
+      font-size: 0.62rem;
+      background: var(--accent-soft);
+      color: #818cf8;
+      border: 1px solid rgba(99,102,241,0.35);
+      padding: 2px 6px;
+      border-radius: 10px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    #sidebar-toggle-btn {
+      background: var(--surface2);
+      color: var(--text2);
+      width: 30px;
+      height: 30px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+      transition: all 0.15s;
+    }
+    #sidebar-toggle-btn svg { width: 16px; height: 16px; transition: transform 0.2s; }
+    #sidebar-toggle-btn:hover { color: var(--text); border-color: var(--accent); background: var(--surface3); }
+
+    .nav-group { padding: 14px 10px 6px; }
+    .nav-section-title {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text2);
+      font-weight: 700;
+      padding: 0 10px 8px;
+      white-space: nowrap;
+    }
+    .nav-btn {
+      width: 100%;
+      background: transparent;
+      color: var(--text2);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 0.86rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+      transition: all 0.15s;
+      text-align: left;
+      white-space: nowrap;
+    }
+    .nav-btn svg { width: 18px; height: 18px; flex-shrink: 0; stroke-width: 2; }
+    .nav-btn:hover { background: var(--surface2); color: var(--text); }
+    .nav-btn.active { background: var(--accent); color: #fff; box-shadow: 0 4px 14px rgba(99,102,241,0.35); }
+    .nav-badge {
+      margin-left: auto;
+      background: var(--warning);
+      color: #000;
+      font-size: 0.68rem;
+      font-weight: 800;
+      padding: 1px 7px;
+      border-radius: 10px;
+    }
+
+    .sidebar-footer { margin-top: auto; padding: 12px 10px; border-top: 1px solid var(--border); }
+
+    /* ── Main Wrapper & Top Utility Header ─────────────────── */
+    #main-wrapper {
+      flex: 1;
+      margin-left: var(--sidebar-w);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      transition: margin-left 0.22s ease;
+      min-width: 0;
+    }
+    #sidebar.collapsed ~ #main-wrapper { margin-left: var(--sidebar-rail); }
+
+    /* Zen Focus Mode (Hides Sidebar & Top Header during Exam) */
+    body.zen-mode #sidebar,
+    body.zen-mode #top-header,
+    body.zen-mode #mobile-bottom-nav { display: none !important; }
+    body.zen-mode #main-wrapper { margin-left: 0 !important; }
+    body.zen-mode .exam-header-sticky { top: 0 !important; }
+
+    #top-header {
+      height: var(--header-h);
+      background: rgba(17, 24, 39, 0.92);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    #mobile-menu-btn {
+      display: none;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    #current-view-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .header-right { display: flex; align-items: center; gap: 10px; flex-wrap: nowrap; }
+    .role-pill {
+      font-size: 0.68rem;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .role-pill.student { background: var(--accent-soft); color: #818cf8; border: 1px solid rgba(99,102,241,0.4); }
+    .role-pill.teacher { background: var(--success-soft); color: #34d399; border: 1px solid rgba(16,185,129,0.4); }
+    .uni-badge {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text2);
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    #main-content {
+      flex: 1;
+      max-width: 1260px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    /* ── Responsive Breakpoints (Small Windows & Mobile) ───── */
+    #sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 190; }
+    #mobile-bottom-nav {
+      display: none;
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: 60px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      z-index: 180;
+      justify-content: space-around;
+      align-items: center;
+      padding: 0 6px;
+    }
+    .mob-nav-btn {
+      background: transparent; color: var(--text2);
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+      font-size: 0.65rem; font-weight: 600; padding: 6px 8px; border-radius: 8px;
+    }
+    .mob-nav-btn svg { width: 18px; height: 18px; }
+    .mob-nav-btn.active { color: var(--accent); }
+
+    @media (max-width: 1024px) {
+      #sidebar { width: var(--sidebar-rail); }
+      #sidebar .nav-label, #sidebar .brand-text, #sidebar .nav-section-title, #sidebar .nav-badge { display: none !important; }
+      #sidebar .sidebar-brand { justify-content: center; padding: 0 8px; }
+      #sidebar .brand-logo { display: none; }
+      #sidebar .nav-btn { justify-content: center; padding: 12px 0; }
+      #main-wrapper { margin-left: var(--sidebar-rail); }
+      .uni-badge { display: none !important; }
+    }
+
+    @media (max-width: 640px) {
+      #sidebar { width: 260px; transform: translateX(-100%); }
+      #sidebar.mobile-open { transform: translateX(0); }
+      #sidebar.mobile-open .brand-logo { display: flex; }
+      #sidebar.mobile-open .sidebar-brand { justify-content: space-between; padding: 0 14px; }
+      #sidebar.mobile-open .nav-label,
+      #sidebar.mobile-open .brand-text,
+      #sidebar.mobile-open .nav-section-title { display: inline-flex !important; }
+      #sidebar.mobile-open .nav-btn { justify-content: flex-start; padding: 10px 12px; }
+      #sidebar-backdrop.open { display: block; }
+      #sidebar-toggle-btn { display: none; }
+      #mobile-menu-btn { display: flex; }
+      #main-wrapper, #sidebar.collapsed ~ #main-wrapper { margin-left: 0; padding-bottom: 70px; }
+      #top-header { padding: 0 12px; }
+      #main-content { padding: 14px; }
+      #mobile-bottom-nav { display: flex; }
+      #user-name-display { display: none; }
+    }
+
+    @media print {
+      #sidebar, #top-header, #mobile-bottom-nav, .btn-sm, .btn-primary, .btn-warning, .btn-success { display: none !important; }
+      #main-wrapper { margin-left: 0 !important; }
+      body { background: #fff; color: #000; }
+      .card, .stat-card, .review-item { border: 1px solid #ccc; background: #fff; color: #000; }
+    }
+
+    /* ── Buttons, Cards & Forms ────────────────────────────── */
+    .btn-sm {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .btn-sm:hover { border-color: var(--accent); color: #818cf8; }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      transition: all 0.15s;
+    }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-success { background: var(--success); color: #06281e; padding: 10px 18px; border-radius: 8px; font-size: 0.88rem; font-weight: 700; }
+    .btn-warning { background: var(--warning); color: #1f1400; padding: 10px 18px; border-radius: 8px; font-size: 0.88rem; font-weight: 700; }
+    .btn-danger { background: var(--danger); color: #fff; padding: 8px 14px; border-radius: 8px; font-size: 0.82rem; font-weight: 600; }
+
+    .tab-section { display: none; animation: fadeIn 0.2s ease; }
+    .tab-section.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 18px; }
+    .card-title { font-size: 0.98rem; font-weight: 700; margin-bottom: 14px; color: var(--text); display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .inline-grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+    @media (max-width: 820px) { .two-col { grid-template-columns: 1fr; } }
+
+    .form-group { margin-bottom: 14px; }
+    .form-label { display: block; font-size: 0.8rem; color: var(--text2); margin-bottom: 5px; font-weight: 600; }
+    .form-input, .form-select, .form-textarea {
+      width: 100%; background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+      padding: 9px 12px; border-radius: 8px; font-size: 0.88rem;
+    }
+    .form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; border-color: var(--accent); }
+    .form-textarea { resize: vertical; }
+
+    /* ── Tables ─────────────────────────────────────────────── */
+    .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .data-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .data-table th {
+      text-align: left; padding: 10px 12px; font-size: 0.72rem; text-transform: uppercase;
+      letter-spacing: 0.05em; color: var(--text2); border-bottom: 1px solid var(--border); white-space: nowrap;
+    }
+    .data-table td { padding: 11px 12px; border-bottom: 1px solid rgba(55, 65, 81, 0.5); vertical-align: middle; }
+    .data-table tr:hover td { background: rgba(99, 102, 241, 0.05); }
+
+    /* ── Exam Simulator & Timer Bar ────────────────────────── */
+    .mode-cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(185px, 1fr)); gap: 14px; margin-bottom: 18px; }
+    .mode-card { background: var(--surface); border: 2px solid var(--border); border-radius: 12px; padding: 18px 16px; cursor: pointer; transition: all 0.18s; }
+    .mode-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .mode-card.selected { border-color: var(--accent); background: var(--accent-soft); }
+    .mode-name { font-size: 0.94rem; font-weight: 700; margin-bottom: 4px; }
+    .mode-desc { font-size: 0.78rem; color: var(--text2); }
+    .mode-meta { font-size: 0.74rem; color: #818cf8; margin-top: 8px; font-weight: 700; }
+
+    .exam-header-sticky {
+      position: sticky; top: var(--header-h); z-index: 85;
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 12px 16px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+      margin-bottom: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+    .timer-pill {
+      background: var(--bg); border: 1px solid var(--border); padding: 5px 12px;
+      border-radius: 8px; font-size: 1.15rem; font-weight: 800; color: var(--success); font-variant-numeric: tabular-nums;
+    }
+    .timer-pill.warning { color: var(--warning); border-color: var(--warning); }
+    .timer-pill.danger { color: var(--danger); border-color: var(--danger); }
+
+    .nav-palette { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+    .pal-btn { width: 34px; height: 34px; border-radius: 6px; background: var(--surface2); border: 1px solid var(--border); color: var(--text2); font-size: 0.78rem; font-weight: 700; }
+    .pal-btn.answered { background: var(--success); border-color: var(--success); color: #052e16; }
+    .pal-btn.flagged { background: var(--warning); border-color: var(--warning); color: #1f1400; }
+
+    #formula-drawer { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; display: none; }
+    #formula-drawer.open { display: block; }
+    .formula-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; font-size: 0.84rem; }
+
+    .question-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 14px; scroll-margin-top: 135px; }
+    .question-card.answered { border-color: var(--accent); }
+    .question-card.flagged { border-color: var(--warning); }
+    .question-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+    .question-text { font-size: 0.96rem; margin-bottom: 14px; line-height: 1.65; }
+    .options-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .option-item {
+      background: var(--surface2); border: 1.5px solid var(--border); border-radius: 8px;
+      padding: 10px 14px; cursor: pointer; font-size: 0.88rem; display: flex; align-items: center; gap: 10px; transition: all 0.14s;
+    }
+    .option-item:hover { border-color: var(--accent); }
+    .option-item.selected { border-color: var(--accent); background: var(--accent-soft); }
+    .option-letter {
+      width: 24px; height: 24px; border-radius: 6px; background: var(--surface3);
+      display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.78rem; flex-shrink: 0;
+    }
+    .option-item.selected .option-letter { background: var(--accent); color: #fff; }
+
+    /* ── Reading Split View ─────────────────────────────────── */
+    .reading-split { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
+    @media (max-width: 860px) { .reading-split { grid-template-columns: 1fr; } }
+    .reading-passage-pane {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 20px; max-height: 580px; overflow-y: auto; font-size: 0.9rem; line-height: 1.75;
+    }
+    .reading-passage-pane p { margin-bottom: 12px; }
+
+    /* ── Annotated Essay Highlighter ────────────────────────── */
+    .annotated-essay-box {
+      background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+      padding: 16px; line-height: 1.85; font-size: 0.9rem; margin-bottom: 14px;
+    }
+    .hl-transition { background: rgba(16, 185, 129, 0.22); color: #6ee7b7; padding: 2px 6px; border-radius: 4px; font-weight: 600; border-bottom: 2px solid var(--success); }
+    .hl-repeated { background: rgba(239, 68, 68, 0.22); color: #fca5a5; padding: 2px 5px; border-radius: 4px; border-bottom: 2px dashed var(--danger); }
+    .hl-long-sent { background: rgba(245, 158, 11, 0.14); border-left: 3px solid var(--warning); padding-left: 8px; }
+
+    /* ── Flashcards ─────────────────────────────────────────── */
+    .flashcard-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
+    .flashcard-scene { height: 155px; perspective: 1000px; cursor: pointer; }
+    .flashcard-inner { position: relative; width: 100%; height: 100%; transition: transform 0.55s; transform-style: preserve-3d; }
+    .flashcard-scene.flipped .flashcard-inner { transform: rotateY(180deg); }
+    .flashcard-front, .flashcard-back {
+      position: absolute; inset: 0; border-radius: var(--radius); padding: 16px;
+      backface-visibility: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;
+    }
+    .flashcard-front { background: var(--surface2); border: 1.5px solid var(--accent); }
+    .flashcard-back { background: var(--surface3); border: 1.5px solid var(--success); transform: rotateY(180deg); font-size: 0.84rem; }
+
+    /* ── Analytics & Stats ──────────────────────────────────── */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); gap: 14px; margin-bottom: 18px; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+    .stat-card .stat-label { font-size: 0.76rem; color: var(--text2); text-transform: uppercase; font-weight: 700; }
+    .stat-card .stat-value { font-size: 1.65rem; font-weight: 800; color: var(--text); margin-top: 4px; }
+    .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 18px; }
+    @media (max-width: 860px) { .charts-grid { grid-template-columns: 1fr; } }
+    .chart-wrapper { position: relative; height: 260px; }
+
+    /* ── Modals ─────────────────────────────────────────────── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.72);
+      backdrop-filter: blur(5px); z-index: 500; justify-content: center; align-items: center; padding: 16px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+      padding: 26px; width: 460px; max-width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+    }
+    .modal.modal-lg { width: 780px; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+    .modal-title { font-size: 1.05rem; font-weight: 700; }
+    .modal-close { background: var(--surface2); color: var(--text2); width: 30px; height: 30px; border-radius: 6px; font-size: 1.2rem; }
+    .modal-tabs { display: flex; gap: 4px; background: var(--surface2); padding: 4px; border-radius: 8px; margin-bottom: 18px; }
+    .modal-tab-btn { flex: 1; padding: 8px; border-radius: 6px; background: transparent; color: var(--text2); font-weight: 600; font-size: 0.84rem; }
+    .modal-tab-btn.active { background: var(--accent); color: #fff; }
+
+    .google-btn {
+      width: 100%; background: #fff; color: #111827; border: 1px solid #d1d5db;
+      padding: 10px 14px; border-radius: 8px; font-size: 0.88rem; font-weight: 600;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+    }
+    .google-acct-card {
+      display: flex; align-items: center; gap: 12px; padding: 10px 12px;
+      background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; margin-bottom: 8px;
+    }
+    .google-acct-card:hover { border-color: var(--accent); background: var(--surface3); }
+    .acct-avatar {
+      width: 34px; height: 34px; border-radius: 50%; background: var(--accent); color: #fff;
+      display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;
+    }
+
+    /* ── Misc Helpers ───────────────────────────────────────── */
+    .badge { display: inline-block; padding: 2px 9px; border-radius: 12px; font-size: 0.72rem; font-weight: 700; }
+    .badge-pending { background: var(--warning-soft); color: var(--warning); }
+    .badge-submitted { background: var(--accent-soft); color: #818cf8; }
+    .badge-graded { background: var(--success-soft); color: var(--success); }
+    .review-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 14px; margin-bottom: 10px; }
+    .review-item.correct-item { border-left: 4px solid var(--success); }
+    .review-item.wrong-item { border-left: 4px solid var(--danger); }
+    .review-item.blank-item { border-left: 4px solid var(--warning); }
+    .ai-explanation-box { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-top: 10px; font-size: 0.84rem; }
+    .mt8 { margin-top: 8px; } .mt16 { margin-top: 16px; } .mb8 { margin-bottom: 8px; } .mb16 { margin-bottom: 16px; }
+    .flex-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .spacer { flex: 1; }
+    .text-success { color: var(--success); } .text-danger { color: var(--danger); } .text-warning { color: var(--warning); } .text-muted { color: var(--text2); } .text-accent { color: #818cf8; } .fw700 { font-weight: 700; } .fs-sm { font-size: 0.8rem; }
+
+    #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+    .toast { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--accent); padding: 12px 16px; border-radius: 8px; font-size: 0.85rem; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+    .toast.success { border-left-color: var(--success); } .toast.error { border-left-color: var(--danger); } .toast.warning { border-left-color: var(--warning); }
+  </style>
+</head>
+<body>
+
+<div id="sidebar-backdrop" onclick="closeMobileSidebar()"></div>
+
+<div id="app-shell">
+  <!-- ── Left Vertical Sidebar ─────────────────────────────── -->
+  <aside id="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-logo">
+        <div class="brand-icon">CE</div>
+        <div class="brand-text">
+          <span>CEnT-S LMS</span>
+          <span class="ver-pill">v4.0</span>
+        </div>
+      </div>
+      <button id="sidebar-toggle-btn" onclick="toggleSidebar()" title="Collapse / Expand Sidebar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+    </div>
+
+    <!-- Instructor Navigation Group (Shown when role == teacher) -->
+    <div class="nav-group" id="nav-group-teacher" style="display:none">
+      <div class="nav-section-title">Instructor Portal</div>
+      <button class="nav-btn" data-tab="teacher-roster" onclick="showTab('teacher-roster')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span class="nav-label">Student Roster &amp; Reports</span>
+      </button>
+      <button class="nav-btn" data-tab="teacher-assignments" onclick="showTab('teacher-assignments')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+        <span class="nav-label">Assignments &amp; Grading</span>
+      </button>
+      <button class="nav-btn" data-tab="teacher-authoring" onclick="showTab('teacher-authoring')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        <span class="nav-label">Content Authoring Studio</span>
+      </button>
+      <button class="nav-btn" data-tab="teacher-gradebook" onclick="showTab('teacher-gradebook')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+        <span class="nav-label">Master Gradebook</span>
+      </button>
+    </div>
+
+    <!-- Student & Study Navigation Group -->
+    <div class="nav-group" id="nav-group-student">
+      <div class="nav-section-title">Academic Workspace</div>
+      <button class="nav-btn" id="nav-item-student-tasks" data-tab="student-assignments" onclick="showTab('student-assignments')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        <span class="nav-label">My Classroom &amp; Tasks</span>
+        <span class="nav-badge" id="badge-pending-tasks" style="display:none">0</span>
+      </button>
+      <button class="nav-btn active" data-tab="exam" onclick="showTab('exam')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span class="nav-label">CEnT-S Simulator</span>
+      </button>
+      <button class="nav-btn" data-tab="bank" onclick="showTab('bank')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+        <span class="nav-label">AI Factory &amp; Bank</span>
+      </button>
+      <button class="nav-btn" data-tab="reading" onclick="showTab('reading')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        <span class="nav-label">IELTS Reading Lab</span>
+      </button>
+      <button class="nav-btn" data-tab="writing" onclick="showTab('writing')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        <span class="nav-label">IELTS Writing Studio</span>
+      </button>
+      <button class="nav-btn" data-tab="analytics" onclick="showTab('analytics')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        <span class="nav-label">Analytics &amp; Uni Radar</span>
+      </button>
+    </div>
+
+    <!-- Bottom Account Group -->
+    <div class="sidebar-footer">
+      <button class="nav-btn" data-tab="account" onclick="showTab('account')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span class="nav-label">Account &amp; Security</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ── Main Content Wrapper ──────────────────────────────── -->
+  <div id="main-wrapper">
+    <header id="top-header">
+      <div class="header-left">
+        <button id="mobile-menu-btn" onclick="openMobileSidebar()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div id="current-view-title">CEnT-S Examination Simulator</div>
+      </div>
+
+      <div class="header-right">
+        <span id="user-role-badge" class="role-pill student">STUDENT</span>
+        <span id="user-uni-badge" class="uni-badge">Politecnico di Milano</span>
+        <span id="user-name-display" class="fs-sm fw700">Ali Farzaneh</span>
+        <button class="btn-sm" onclick="quickToggleRole()" title="Switch between Student and Instructor Portal">⇄ Switch Role</button>
+        <button class="btn-sm" id="btn-auth" onclick="openModal('auth-modal')">Sign In / Switch</button>
+      </div>
+    </header>
+
+    <main id="main-content">
+
+      <!-- ══════════════════════════════════════════════════════
+           1. STUDENT CLASSROOM & ASSIGNMENTS TAB
+           ══════════════════════════════════════════════════════ -->
+      <section id="tab-student-assignments" class="tab-section">
+        <div class="card">
+          <div class="card-title">
+            <span>📢 Classroom Announcements &amp; Study Materials</span>
+            <button class="btn-sm" onclick="loadAnnouncements()">↻ Refresh</button>
+          </div>
+          <div id="student-announcements-list"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <span>Join an Instructor's Classroom</span>
+            <span class="fs-sm text-muted">Demo Instructor Code: <strong>CENTS2026</strong></span>
+          </div>
+          <div class="flex-row">
+            <input class="form-input" id="join-invite-code" style="max-width:280px" placeholder="Enter Class Code (e.g. CENTS2026)" value="CENTS2026" />
+            <button class="btn-primary" onclick="joinTeacherByCode()">Connect to Instructor</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <span>My Assigned Exams &amp; Homework Tasks</span>
+            <button class="btn-sm" onclick="loadStudentAssignments()">↻ Refresh</button>
+          </div>
+          <div id="student-assignments-list"></div>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════════════════════
+           2. INSTRUCTOR ROSTER & DIAGNOSTICS TAB
+           ══════════════════════════════════════════════════════ -->
+      <section id="tab-teacher-roster" class="tab-section">
+        <div class="two-col">
+          <div class="card">
+            <div class="card-title">🏫 Create &amp; Manage Cohorts / Classrooms</div>
+            <div class="flex-row mb8">
+              <input class="form-input" id="new-cls-name" placeholder="e.g. CEnT-S Physics Batch B" style="flex:1" />
+              <select class="form-select" id="new-cls-subj" style="max-width:160px">
+                <option value="All Subjects">All Subjects</option>
+                <option value="Mathematics">Mathematics</option>
+                <option value="Physics">Physics</option>
+                <option value="IELTS Academic">IELTS Academic</option>
+              </select>
+              <button class="btn-primary btn-sm" onclick="createClassroom()">+ Create Cohort</button>
+            </div>
+            <div id="teacher-classrooms-list" class="fs-sm"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">📢 Post Classroom Announcement / Lecture Note</div>
+            <div class="form-group">
+              <input class="form-input" id="ann-title" placeholder="Announcement Title (e.g. Week 5 Formula Sheet &amp; Notes)" />
+            </div>
+            <div class="form-group">
+              <textarea class="form-textarea" id="ann-content" rows="2" placeholder="Write instructions, study tips, or homework reminders for your class..."></textarea>
+            </div>
+            <div class="flex-row">
+              <input class="form-input" id="ann-link" placeholder="Optional Resource / PDF URL (https://...)" style="flex:1" />
+              <button class="btn-primary btn-sm" onclick="postAnnouncement()">Publish to Class</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="two-col">
+          <div class="card">
+            <div class="card-title">Class Invite Code</div>
+            <p class="fs-sm text-muted mb8">Share this code with your students so they can connect to your classroom:</p>
+            <div class="flex-row">
+              <div class="timer-pill" id="teacher-invite-code-display">CENTS2026</div>
+              <button class="btn-sm" onclick="copyInviteCode()">Copy Code</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Enroll Student by Email</div>
+            <p class="fs-sm text-muted mb8">Directly link a registered student account to your roster:</p>
+            <div class="flex-row">
+              <input class="form-input" id="teacher-add-student-email" style="flex:1" placeholder="student@email.com (e.g. ali@student.eu)" value="ali@student.eu" />
+              <button class="btn-primary" onclick="teacherAddStudent()">+ Add Student</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <span>Enrolled Students Roster &amp; Weakness Diagnostics</span>
+            <button class="btn-sm" onclick="loadTeacherRoster()">↻ Refresh Roster</button>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Student</th>
+                  <th>Target University</th>
+                  <th>Exams Taken</th>
+                  <th>Avg Score %</th>
+                  <th>Writings</th>
+                  <th>Detected Weakest Subject</th>
+                  <th>Instructor Actions</th>
+                </tr>
+              </thead>
+              <tbody id="teacher-students-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════════════════════
+           3. INSTRUCTOR ASSIGNMENT & EXAM BUILDER TAB
+           ══════════════════════════════════════════════════════ -->
+      <section id="tab-teacher-assignments" class="tab-section">
+        <div class="two-col">
+          <div class="card">
+            <div class="card-title">Create Custom Exam / Task for Students</div>
+            <div class="form-group">
+              <label class="form-label">Assignment Title</label>
+              <input class="form-input" id="asgn-title" placeholder="e.g. Week 4 Calculus &amp; Physics Assessment" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Instructions / Description</label>
+              <textarea class="form-textarea" id="asgn-desc" rows="2" placeholder="Complete without calculator under strict CISIA penalty rules..."></textarea>
+            </div>
+            <div class="inline-grid-3">
+              <div class="form-group">
+                <label class="form-label">Assign To</label>
+                <select class="form-select" id="asgn-student-select">
+                  <option value="">All Enrolled Students</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Task Type</label>
+                <select class="form-select" id="asgn-type" onchange="onAsgnTypeChange()">
+                  <option value="exam">CEnT-S Exam Quiz</option>
+                  <option value="writing">IELTS Writing Task</option>
+                  <option value="reading">IELTS Reading Task</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Question Selection Mode</label>
+                <select class="form-select" id="asgn-selection-mode" onchange="onAsgnSelectionModeChange()">
+                  <option value="auto">Auto-Pick by Subject</option>
+                  <option value="manual">Hand-Pick Specific Questions</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Auto-pick controls -->
+            <div id="asgn-auto-box" class="inline-grid-3">
+              <div class="form-group">
+                <label class="form-label">Subject Focus</label>
+                <select class="form-select" id="asgn-subject">
+                  <option value="Mathematics">Mathematics</option>
+                  <option value="Logic">Logic</option>
+                  <option value="Physics">Physics</option>
+                  <option value="Chemistry">Chemistry</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Difficulty</label>
+                <select class="form-select" id="asgn-difficulty">
+                  <option value="Easy">Easy</option>
+                  <option value="Medium" selected>Medium</option>
+                  <option value="Hard">Hard</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Question Count</label>
+                <input class="form-input" type="number" id="asgn-auto-count" value="5" min="1" max="20" />
+              </div>
+            </div>
+
+            <!-- Manual Question Picker Box -->
+            <div id="asgn-manual-box" class="form-group" style="display:none">
+              <label class="form-label">Check Specific Questions from Bank (<span id="asgn-picked-count">0</span> selected):</label>
+              <div id="asgn-manual-q-list" style="max-height:210px;overflow-y:auto;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px"></div>
+            </div>
+
+                        <!-- Writing Prompt Picker (shown when Task Type == writing) -->
+            <div id="asgn-writing-box" class="form-group" style="display:none">
+              <label class="form-label">Select Official or Custom IELTS Writing Prompt:</label>
+              <select class="form-select" id="asgn-writing-prompt-sel"></select>
+            </div>
+
+            <!-- Reading Passage Picker (shown when Task Type == reading) -->
+            <div id="asgn-reading-box" class="form-group" style="display:none">
+              <label class="form-label">Select IELTS Academic Reading Passage:</label>
+              <select class="form-select" id="asgn-reading-passage-sel"></select>
+            </div>
+
+            <div class="form-group">
+              <label style="display:flex;align-items:center;gap:8px;font-size:0.84rem;cursor:pointer;color:var(--warning)">
+                <input type="checkbox" id="asgn-strict-mode" checked />
+                🔒 Enable Strict Proctored Exam Mode (Disable Timer Pause/Reset &amp; Track Student Tab Switches)
+              </label>
+            </div>
+
+            <div class="inline-grid-3">
+              <div class="form-group">
+                <label class="form-label">Time Limit (mins)</label>
+                <input class="form-input" type="number" id="asgn-time-limit" value="20" min="5" max="120" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Due Date</label>
+                <input class="form-input" type="date" id="asgn-due-date" value="2026-11-01" />
+              </div>
+            </div>
+            <button class="btn-primary" style="width:100%" onclick="teacherCreateAssignment()">Publish Assignment to Student(s)</button>
+          </div>
+
+          <div class="card">
+            <div class="card-title">
+              <span>Published Assignments &amp; Student Grading Inbox</span>
+              <button class="btn-sm" onclick="loadTeacherAssignments()">↻ Refresh</button>
+            </div>
+            <div id="teacher-assignments-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════════════════════
+           4. CEnT-S EXAM SIMULATOR TAB
+           ══════════════════════════════════════════════════════ -->
+      <section id="tab-exam" class="tab-section active">
+        <div id="exam-lobby">
+          <div class="card">
+            <div class="card-title">
+              <span>Select CEnT-S / CISIA Examination Mode</span>
+              <span class="fs-sm text-muted">Scoring: <strong class="text-success">+1.0 Correct</strong> · <strong class="text-danger">−0.25 Wrong</strong> · <strong class="text-warning">0.0 Blank</strong></span>
+            </div>
+
+            <div class="mode-cards-grid">
+              <div class="mode-card selected" data-mode="mock1" onclick="selectMode('mock1')">
+                <div class="mode-name">Mock Exam #1</div>
+                <div class="mode-desc">Balanced 4-subject foundation set</div>
+                <div class="mode-meta">20 Q · 40 min</div>
+              </div>
+              <div class="mode-card" data-mode="mock2" onclick="selectMode('mock2')">
+                <div class="mode-name">Mock Exam #2</div>
+                <div class="mode-desc">Intermediate problem solving</div>
+                <div class="mode-meta">20 Q · 40 min</div>
+              </div>
+              <div class="mode-card" data-mode="mock3" onclick="selectMode('mock3')">
+                <div class="mode-name">Mock Exam #3</div>
+                <div class="mode-desc">Advanced engineering set</div>
+                <div class="mode-meta">20 Q · 40 min</div>
+              </div>
+              <div class="mode-card" data-mode="marathon" onclick="selectMode('marathon')">
+                <div class="mode-name">Official Marathon</div>
+                <div class="mode-desc">Full endurance simulation</div>
+                <div class="mode-meta">40 Q · 80 min</div>
+              </div>
+              <div class="mode-card" data-mode="custom" onclick="selectMode('custom')">
+                <div class="mode-name">Custom / Mistake Drill</div>
+                <div class="mode-desc">Target weak subjects or bookmarks</div>
+                <div class="mode-meta">Flexible · Custom</div>
+              </div>
+            </div>
+
+            <div id="custom-options-row" class="card" style="display:none;background:var(--surface2)">
+              <div class="inline-grid-3">
+                <div>
+                  <label class="form-label">Subject Filter</label>
+                  <select class="form-select" id="custom-exam-subject">
+                    <option value="">All 4 Allowed Subjects</option>
+                    <option value="Mathematics">Mathematics</option>
+                    <option value="Logic">Logic</option>
+                    <option value="Physics">Physics</option>
+                    <option value="Chemistry">Chemistry</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="form-label">Difficulty</label>
+                  <select class="form-select" id="custom-exam-diff">
+                    <option value="All">All Levels</option>
+                    <option value="Easy">Easy</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Hard">Hard</option>
+                  </select>
+                </div>
+                <div style="display:flex;align-items:flex-end;padding-bottom:8px">
+                  <label style="cursor:pointer;font-size:0.86rem;display:flex;align-items:center;gap:8px">
+                    <input type="checkbox" id="bookmarked-only-cb" />
+                    Only from My Mistake Notebook
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <button class="btn-primary" style="width:100%;padding:13px;font-size:0.96rem" onclick="startExamFromLobby()">
+              Launch Examination Workspace
+            </button>
+          </div>
+
+          <div id="lobby-attempts-box" class="card"></div>
+        </div>
+
+        <!-- Active Exam Workspace -->
+        <div id="exam-workspace" style="display:none">
+          <div class="exam-header-sticky">
+            <span class="timer-pill" id="exam-timer">40:00</span>
+            <button class="btn-sm" onclick="resumeExamTimer()">▶ Start</button>
+            <button class="btn-sm" id="btn-pause-resume" onclick="toggleExamPause()">⏸ Pause</button>
+            <button class="btn-sm" onclick="resetExamTimer()">⏹ Reset</button>
+            <span class="fs-sm text-muted" id="exam-progress-text">0 / 20 answered</span>
+            <div class="spacer"></div>
+            <button class="btn-sm" onclick="toggleZenMode()" id="btn-zen-mode">⛶ Focus Mode</button>
+            <button class="btn-sm" onclick="toggleFormulaDrawer()">📐 Reference Sheet</button>
+            <button class="btn-sm" onclick="showExamLobby()">✕ Exit</button>
+            <button class="btn-success btn-sm" onclick="submitExam()">✓ Submit Exam</button>
+          </div>
+
+          <div id="formula-drawer">
+            <div class="card-title">Scientific Constants &amp; Formula Reference (Math, Logic, Physics, Chemistry)</div>
+            <div class="formula-grid">
+              <div><div class="text-muted fs-sm">Quadratic Roots</div>\( x = \frac{-b \pm \sqrt{b^2-4ac}}{2a} \)</div>
+              <div><div class="text-muted fs-sm">Integration by Parts</div>\( \int u\,dv = uv - \int v\,du \)</div>
+              <div><div class="text-muted fs-sm">De Morgan's Law</div>\( \neg(P \wedge Q) \equiv \neg P \vee \neg Q \)</div>
+              <div><div class="text-muted fs-sm">Kinematics</div>\( v^2 = v_0^2 + 2a\Delta x \)</div>
+              <div><div class="text-muted fs-sm">Carnot Efficiency</div>\( \eta = 1 - \frac{T_C}{T_H} \)</div>
+              <div><div class="text-muted fs-sm">Ideal Gas &amp; pH</div>\( PV = nRT \quad;\quad \text{pH} = -\log_{10}[\text{H}^+] \)</div>
+            </div>
+          </div>
+
+          <div class="card" style="padding:14px">
+            <div class="fs-sm text-muted mb8">Question Navigator (Click number to jump):</div>
+            <div class="nav-palette" id="exam-nav-palette"></div>
+          </div>
+
+          <div id="question-cards-container"></div>
+        </div>
+
+        <!-- Exam Results -->
+        <div id="exam-results" style="display:none">
+          <div class="card" style="text-align:center">
+            <div class="fs-sm text-muted">Official CISIA Net Score</div>
+            <div style="font-size:2.8rem;font-weight:800;color:var(--accent)" id="results-net-score">0.00</div>
+            <div class="stats-grid mt16">
+              <div class="stat-card"><div class="stat-label">Correct (+1.0)</div><div class="stat-value text-success" id="res-correct">0</div></div>
+              <div class="stat-card"><div class="stat-label">Wrong (−0.25)</div><div class="stat-value text-danger" id="res-wrong">0</div></div>
+              <div class="stat-card"><div class="stat-label">Blank (0.0)</div><div class="stat-value text-warning" id="res-blank">0</div></div>
+              <div class="stat-card"><div class="stat-label">Accuracy</div><div class="stat-value text-accent" id="res-pct">0%</div></div>
+            </div>
+            <div class="ai-explanation-box" style="text-align:left">
+              <div class="fw700 text-warning mb8">💡 CISIA Penalty Risk Optimizer</div>
+              <div id="penalty-desc" class="fs-sm"></div>
+            </div>
+            <div class="flex-row mt16" style="justify-content:center">
+              <button class="btn-sm" onclick="showExamLobby()">← Back to Exam Lobby</button>
+              <button class="btn-sm" onclick="window.print()">🖨️ Print / Export Score Report (PDF)</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Step-by-Step Question Review &amp; AI Trap Tutor</div>
+            <div id="review-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════════════════════
+           5. AI QUESTION FACTORY & QUESTION BANK TAB
+           ══════════════════════════════════════════════════════ -->
+      <section id="tab-bank" class="tab-section">
+        <div class="two-col">
+          <div class="card">
+            <div class="card-title">AI Question Generator (Strictly 4 CEnT-S Subjects)</div>
+            <div class="inline-grid-3">
+              <div class="form-group">
+                <label class="form-label">Subject</label>
+                <select class="form-select" id="gen-subject">
+                  <option value="Mathematics">Mathematics</option>
+                  <option value="Logic">Logic</option>
+                  <option value="Physics">Physics</option>
+                  <option value="Chemistry">Chemistry</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Difficulty</label>
+                <select class="form-select" id="gen-difficulty">
+                  <option value="Easy">Easy</option>
+                  <option value="Medium" selected>Medium</option>
+                  <option value="Hard">Hard</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Count</label>
+                <select class="form-select" id="gen-count">
+                  <option value="3">3 Questions</option>
+                  <option value="5" selected>5 Questions</option>
+                  <option value="10">10 Questions</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Specific Topic (Optional)</label>
+              <input class="form-input" id="gen-topic" placeholder="e.g. Calculus, Thermodynamics, Stoichiometry..." />
+            </div>
+            <button class="btn-primary" style="width:100%" onclick="generateQuestions()">Generate &amp; Save Questions</button>
+            <div id="gen-results" class="mt16"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Study Notes → Instant Mock Exam</div>
+            <div class="form-group">
+              <label class="form-label">Paste Lecture Notes or Formulas</label>
+              <textarea class="form-textarea" id="notes-text" rows="5" placeholder="Paste any physics, math, logic, or chemistry study notes here..."></textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Target Subject</label>
+              <select class="form-select" id="notes-subject">
+                <option value="Physics">Physics</option>
+                <option value="Mathematics">Mathematics</option>
+                <option value="Chemistry">Chemistry</option>
+                <option value="Logic">Logic</option>
+              </select>
+            </div>
+            <button class="btn-primary" style="width:100%" onclick="notesToExam()">Convert Notes to Quiz</button>
+            <div id="notes-results" class="mt16"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <span>Interactive Question Bank &amp; Mistake Notebook</span>
+            <button class="btn-sm" onclick="exportQuestionBankJSON()">⬇ Export Bank (JSON)</button>
+          </div>
+          <div class="inline-grid-3 mb16">
+            <select class="form-select" id="bank-subject-filter" onchange="loadQuestionBank()">
+              <option value="">All 4 Subjects</option>
+              <option value="Mathematics">Mathematics</option>
+              <option value="Logic">Logic</option>
+              <option value="Physics">Physics</option>
+              <option value="Chemistry">Chemistry</option>
+            </select>
+            <select class="form-select" id="bank-diff-filter" onchange="loadQuestionBank()">
+              <option value="">All Difficulties</option>
+              <option value="Easy">Easy</option>
+              <option value="Medium">Medium</option>
+              <option value="Hard">Hard</option>
+            </select>
+            <input class="form-input" id="bank-search" placeholder="Search topic or formula..." oninput="debounceLoadBank()" />
+          </div>
+          <div class="mb16">
+            <label style="cursor:pointer;font-size:0.85rem;display:inline-flex;align-items:center;gap:8px">
+              <input type="checkbox" id="bank-bookmarked-only" onchange="loadQuestionBank()" />
+              ⭐ Show Only My Mistake Notebook / Bookmarked Questions
+            </label>
+          </div>
+          <div id="question-bank-list"></div>
+          <div class="flex-row mt16">
+            <button class="btn-sm" id="bank-prev-btn" onclick="bankPrevPage()">← Prev</button>
+            <span id="bank-page-info" class="fs-sm text-muted"></span>
+            <button class="btn-sm" id="bank-next-btn" onclick="bankNextPage()">Next →</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <span>Scientific &amp; IELTS Flashcards Deck (Click card to flip)</span>
+            <select class="form-select" id="flashcard-subject" onchange="loadFlashcards(this.value)" style="max-width:220px">
+              <option value="">All Categories</option>
+              <option value="Mathematics">Mathematics</option>
+              <option value="Logic">Logic</option>
+              <option value="Physics">Physics</option>
+              <option value="Chemistry">Chemistry</option>
+              <option value="IELTS Vocabulary">IELTS Vocabulary</option>
+            </select>
+          </div>
+          <div id="flashcard-grid" class="flashcard-grid"></div>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════════════════════
+           6. IELTS READING LAB TAB
+           ══════════════════════════════════════════════════════ -->
+      <section id="tab-reading" class="tab-section">
+        <div class="card">
+          <div class="flex-row">
+            <select class="form-select" id="passage-selector" onchange="renderPassage(this.value)" style="max-width:340px"></select>
+            <div class="spacer"></div>
+            <span class="timer-pill" id="reading-timer">20:00</span>
+            <button class="btn-sm" onclick="startReadingTimer()">▶ Start</button>
+            <button class="btn-sm" id="btn-reading-pause" onclick="pauseReadingTimer()">⏸ Pause</button>
+            <button class="btn-sm" onclick="resetReadingTimer()">⏹ Reset</button>
+          </div>
+        </div>
+
+        <div class="reading-split" id="reading-split" style="display:none">
+          <div class="reading-passage-pane" id="reading-passage-pane"></div>
+          <div class="card" id="reading-questions-pane" style="margin-bottom:0"></div>
+        </div>
+        <div id="reading-placeholder" class="card" style="text-align:center;color:var(--text2)">Select a passage above to begin.</div>
+      </section>
+
+      <!-- ══════════════════════════════════════════════════════
+           7. IELTS WRITING STUDIO TAB
+           ══════════════════════════════════════════════════════ -->
+      <section id="tab-writing" class="tab-section">
+        <div class="card">
+          <div class="flex-row">
+            <select class="form-select" id="writing-prompt-selector" onchange="onWritingPromptChange()" style="flex:1;min-width:220px"></select>
+            <select class="form-select" id="writing-task-type" onchange="onTaskTypeChange()" style="max-width:175px">
+              <option value="task1">Task 1 (150+ words)</option>
+              <option value="task2" selected>Task 2 (250+ words)</option>
+            </select>
+            <span class="timer-pill" id="writing-timer">40:00</span>
+            <button class="btn-sm" onclick="startWritingTimer()">▶ Start</button>
+            <button class="btn-sm" id="btn-writing-pause" onclick="pauseWritingTimer()">⏸ Pause</button>
+            <button class="btn-sm" onclick="resetWritingTimer()">⏹ Reset</button>
+          </div>
+        </div>
+
+        <div id="writing-prompt-display" class="card" style="display:none">
+          <div class="card-title">Official Prompt &amp; Reference Data</div>
+          <div id="writing-prompt-text" class="fs-sm"></div>
+        </div>
+
+        <div class="card">
+          <div class="flex-row mb8" style="justify-content:space-between">
+            <span id="word-count-label" class="fs-sm fw700">0 words</span>
+            <span id="word-count-target" class="fs-sm text-muted">Target: 250+ words</span>
+          </div>
+          <div style="background:var(--surface2);height:8px;border-radius:6px;overflow:hidden;margin-bottom:14px">
+            <div id="word-count-fill" style="width:0%;height:100%;background:var(--accent);transition:width 0.25s"></div>
+          </div>
+          <textarea class="form-textarea" id="main-essay-textarea" rows="11" placeholder="Write your academic response here. Separate paragraphs with a blank line..." oninput="updateWordCount()"></textarea>
+          <div class="flex-row mt16">
+            <button class="btn-primary" onclick="submitWriting()">Evaluate Band Score &amp; Highlight Essay</button>
+            <button class="btn-warning" onclick="upgradeEssay()">✨ AI Upgrade to Band 8.5 Prose</button>
+          </div>
+        </div>
+
+        <div id="writing-feedback" style="display:none"></div>
+        <div id="writing-history-box" class="card mt16"></div>
+      </section>
+
+      <!-- ══════════════════════════════════════════════════════
+           8. ANALYTICS & UNI RADAR TAB
+           ══════════════════════════════════════════════════════ -->
+      <section id="tab-analytics" class="tab-section">
+        <div class="flex-row mb16" style="justify-content:space-between">
+          <span class="fs-sm text-muted">Personal performance isolated to your account</span>
+          <button class="btn-sm" onclick="window.print()">🖨️ Export Official Analytics Report (PDF)</button>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card"><div class="stat-label">My Total Exams</div><div class="stat-value" id="stat-total-exams">0</div></div>
+          <div class="stat-card"><div class="stat-label">My Avg Score</div><div class="stat-value" id="stat-avg-score">0.0</div></div>
+          <div class="stat-card"><div class="stat-label">My Best Score</div><div class="stat-value text-success" id="stat-best-score">0.0</div></div>
+          <div class="stat-card"><div class="stat-label">Progress Trend</div><div class="stat-value text-accent" id="stat-improvement">0%</div></div>
+        </div>
+
+        <div class="charts-grid">
+          <div class="card" style="grid-column: 1 / -1">
+            <div class="card-title">University Admission Cut-off Radar (Your Score vs. Italian Engineering Cut-offs)</div>
+            <div class="chart-wrapper" style="height:300px"><canvas id="radar-chart"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Personal Score History</div>
+            <div class="chart-wrapper"><canvas id="history-chart"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Subject Accuracy Breakdown (%)</div>
+            <div class="chart-wrapper"><canvas id="subject-chart"></canvas></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Verified Platform Leaderboard</div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead><tr><th>Rank</th><th>Student</th><th>Best Net Score</th><th>Target University</th></tr></thead>
+              <tbody id="leaderboard-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════════════════════
+           9. ACCOUNT & SECURITY SETTINGS TAB
+           ══════════════════════════════════════════════════════ -->
+      <section id="tab-account" class="tab-section">
+        <div class="two-col">
+          <div class="card">
+            <div class="card-title">Account Profile &amp; Role Configuration</div>
+            <div class="form-group">
+              <label class="form-label">Full Name</label>
+              <input class="form-input" id="acc-name" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email Address</label>
+              <input class="form-input" id="acc-email" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Platform Role (Controls Sidebar &amp; Instructor Tools)</label>
+              <select class="form-select" id="acc-role">
+                <option value="student">🎓 Student Account</option>
+                <option value="teacher">👨‍🏫 Teacher / Instructor Account</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Target University</label>
+              <select class="form-select" id="acc-uni">
+                <option value="Politecnico di Milano">Politecnico di Milano</option>
+                <option value="Università di Padova">Università di Padova</option>
+                <option value="Università di Bologna">Università di Bologna</option>
+                <option value="Politecnico di Torino">Politecnico di Torino</option>
+                <option value="Università di Pavia">Università di Pavia</option>
+                <option value="Università di Messina">Università di Messina</option>
+              </select>
+            </div>
+            <div class="inline-grid-3">
+              <div class="form-group">
+                <label class="form-label">Target CEnT-S (/20)</label>
+                <input class="form-input" type="number" id="acc-target-score" step="0.5" min="0" max="20" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Target IELTS Band</label>
+                <input class="form-input" type="number" id="acc-target-ielts" step="0.5" min="1" max="9" />
+              </div>
+            </div>
+            <button class="btn-primary" style="width:100%" onclick="saveAccountSettings()">Save Account Changes</button>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Security, AI Key &amp; Session</div>
+            <div class="form-group">
+              <label class="form-label">Optional Live AI API Key (Gemini / OpenAI)</label>
+              <input class="form-input" type="password" id="acc-ai-key" placeholder="Leave blank to use built-in offline engine" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Change Password (Optional)</label>
+              <input class="form-input" type="password" id="acc-new-password" placeholder="Enter new password to update..." />
+            </div>
+            <button class="btn-primary mb16" style="width:100%" onclick="saveAccountSettings()">Update Security &amp; API Key</button>
+
+            <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:16px">
+              <div class="fs-sm text-muted mb8">Switch account or end your current session:</div>
+              <div class="flex-row">
+                <button class="btn-sm" onclick="openModal('auth-modal')">Switch Account</button>
+                <button class="btn-danger" onclick="doLogout()">Sign Out</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ══════════════════════════════════════════════════════
+           10. INSTRUCTOR CONTENT AUTHORING STUDIO TAB
+           ══════════════════════════════════════════════════════ -->
+      <section id="tab-teacher-authoring" class="tab-section">
+        <div class="two-col">
+          <!-- Custom 5-Option CEnT-S Question Builder -->
+          <div class="card">
+            <div class="card-title">✍️ Author Custom 5-Option CEnT-S Question (Supports LaTeX)</div>
+            <div class="inline-grid-3">
+              <div class="form-group">
+                <label class="form-label">Subject (4 Allowed)</label>
+                <select class="form-select" id="auth-q-subj">
+                  <option value="Mathematics">Mathematics</option>
+                  <option value="Logic">Logic</option>
+                  <option value="Physics">Physics</option>
+                  <option value="Chemistry">Chemistry</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Topic</label>
+                <input class="form-input" id="auth-q-topic" placeholder="e.g. Calculus, Optics" value="Calculus" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Difficulty</label>
+                <select class="form-select" id="auth-q-diff">
+                  <option value="Easy">Easy</option>
+                  <option value="Medium" selected>Medium</option>
+                  <option value="Hard">Hard</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Question Stem (Use \( ... \) for inline LaTeX)</label>
+              <textarea class="form-textarea" id="auth-q-text" rows="3" placeholder="e.g. Evaluate the definite integral \(\int_0^3 2x\,dx\)."></textarea>
+            </div>
+            <div class="two-col" style="gap:10px">
+              <div class="form-group"><label class="form-label">Option A</label><input class="form-input" id="auth-q-a" placeholder="e.g. \(3\)" /></div>
+              <div class="form-group"><label class="form-label">Option B</label><input class="form-input" id="auth-q-b" placeholder="e.g. \(6\)" /></div>
+              <div class="form-group"><label class="form-label">Option C</label><input class="form-input" id="auth-q-c" placeholder="e.g. \(9\)" /></div>
+              <div class="form-group"><label class="form-label">Option D</label><input class="form-input" id="auth-q-d" placeholder="e.g. \(12\)" /></div>
+              <div class="form-group"><label class="form-label">Option E</label><input class="form-input" id="auth-q-e" placeholder="e.g. \(18\)" /></div>
+              <div class="form-group">
+                <label class="form-label">Correct Option</label>
+                <select class="form-select" id="auth-q-correct">
+                  <option value="A">Option A</option>
+                  <option value="B">Option B</option>
+                  <option value="C" selected>Option C</option>
+                  <option value="D">Option D</option>
+                  <option value="E">Option E</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Step-by-Step Solution / Explanation</label>
+              <textarea class="form-textarea" id="auth-q-expl" rows="2" placeholder="Explain how to derive the answer and avoid common traps..."></textarea>
+            </div>
+            <button class="btn-primary" style="width:100%" onclick="authorSaveQuestion()">+ Save Question to Repository</button>
+            <div class="card mt16" style="background:var(--surface2)">
+              <div class="card-title" style="font-size:0.88rem">
+                <span>📂 Bulk Import Questions (JSON File)</span>
+                <input type="file" id="bulk-json-file" accept=".json" style="display:none" onchange="handleBulkJsonImport(this)" />
+                <button class="btn-sm" onclick="document.getElementById('bulk-json-file').click()">Upload .JSON File</button>
+              </div>
+              <div class="fs-sm text-muted">Upload a JSON array of questions (compatible with the "Export Bank JSON" format) to add an entire question set in 1 click.</div>
+            </div>
+          </div>
+
+          <!-- Custom IELTS Writing Prompt & Reading Passage Builder -->
+          <div>
+            <div class="card">
+              <div class="card-title">📝 Author Custom IELTS Writing Prompt</div>
+              <div class="two-col" style="gap:10px">
+                <div class="form-group">
+                  <label class="form-label">Task Type</label>
+                  <select class="form-select" id="auth-w-type">
+                    <option value="Task 1">Task 1 (Data / Table / Chart)</option>
+                    <option value="Task 2" selected>Task 2 (Academic Essay)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Prompt Title</label>
+                  <input class="form-input" id="auth-w-title" placeholder="e.g. Task 2: Renewable Energy Subsidies" />
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Prompt Instructions</label>
+                <textarea class="form-textarea" id="auth-w-text" rows="3" placeholder="Write the full IELTS prompt question here..."></textarea>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Optional HTML Table / SVG Chart (for Task 1)</label>
+                <textarea class="form-textarea" id="auth-w-chart" rows="2" placeholder="Optional <table>...</table> or SVG markup"></textarea>
+              </div>
+              <button class="btn-primary" style="width:100%" onclick="authorSaveWritingPrompt()">+ Save Writing Prompt</button>
+            </div>
+
+            <div class="card">
+              <div class="card-title">📖 Author Custom IELTS Reading Passage</div>
+              <div class="two-col" style="gap:10px">
+                <div class="form-group">
+                  <label class="form-label">Passage Title</label>
+                  <input class="form-input" id="auth-r-title" placeholder="e.g. Quantum Cryptography &amp; Photonics" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Topic Domain</label>
+                  <input class="form-input" id="auth-r-topic" placeholder="e.g. Physics &amp; Computing" value="Technology" />
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Passage Text (Separate paragraphs with a blank line)</label>
+                <textarea class="form-textarea" id="auth-r-text" rows="3" placeholder="Paragraph A: ...
+
+Paragraph B: ..."></textarea>
+              </div>
+              <div class="form-group">
+                <div class="flex-row mb8" style="justify-content:space-between">
+                  <label class="form-label" style="margin:0">Comprehension Questions (5-Option):</label>
+                  <button class="btn-sm" type="button" onclick="addAuthorReadingQuestionRow()">+ Add Question</button>
+                </div>
+                <div id="auth-r-questions-container"></div>
+              </div>
+              <button class="btn-primary" style="width:100%" onclick="authorSaveReadingPassage()">+ Save Reading Passage</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════════════════════
+           11. INSTRUCTOR MASTER GRADEBOOK MATRIX TAB
+           ══════════════════════════════════════════════════════ -->
+      <section id="tab-teacher-gradebook" class="tab-section">
+        <div class="card">
+          <div class="card-title">
+            <span>📊 Master Classroom Gradebook Matrix (Students × Assignments)</span>
+            <div class="flex-row">
+              <button class="btn-sm" onclick="loadTeacherGradebook()">↻ Refresh Matrix</button>
+              <button class="btn-success btn-sm" onclick="exportGradebookCSV()">⬇ Export Gradebook (Excel / CSV)</button>
+            </div>
+          </div>
+          <p class="fs-sm text-muted mb16">Click any cell with a submitted score to open the <strong>2-Column Interactive Grading Workbench</strong> and inspect the student's full exam paper or essay.</p>
+          <div class="table-responsive" id="gradebook-matrix-container"></div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- ── Mobile Bottom Navigation Bar ───────────────────────── -->
+<nav id="mobile-bottom-nav">
+  <button class="mob-nav-btn active" data-tab="exam" onclick="showTab('exam')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    <span>Exam</span>
+  </button>
+  <button class="mob-nav-btn" data-tab="student-assignments" onclick="showTab('student-assignments')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+    <span>Tasks</span>
+  </button>
+  <button class="mob-nav-btn" data-tab="bank" onclick="showTab('bank')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/></svg>
+    <span>AI Bank</span>
+  </button>
+  <button class="mob-nav-btn" data-tab="writing" onclick="showTab('writing')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+    <span>IELTS</span>
+  </button>
+  <button class="mob-nav-btn" data-tab="account" onclick="showTab('account')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>
+    <span>Account</span>
+  </button>
+</nav>
+
+<!-- ── Auth Modal (Sign In / Register / Demo / Google) ────── -->
+<div class="modal-overlay" id="auth-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Sign In or Create Account</div>
+      <button class="modal-close" onclick="closeModal('auth-modal')">&times;</button>
+    </div>
+
+    <div class="mb16">
+      <div class="fs-sm text-muted mb8">Instant 1-Click Demo Access:</div>
+      <div class="two-col" style="gap:8px">
+        <button class="btn-sm" style="padding:9px;border-color:var(--accent)" onclick="demoLogin('student')">🎓 Demo Student (Ali)</button>
+        <button class="btn-sm" style="padding:9px;border-color:var(--success)" onclick="demoLogin('teacher')">👨‍🏫 Demo Instructor</button>
+      </div>
+    </div>
+
+    <div class="modal-tabs">
+      <button class="modal-tab-btn active" id="auth-tab-signin" onclick="switchAuthTab('signin')">Sign In</button>
+      <button class="modal-tab-btn" id="auth-tab-register" onclick="switchAuthTab('register')">Create Account</button>
+    </div>
+
+    <div id="auth-form-signin">
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="form-input" type="email" id="signin-email" placeholder="ali@student.eu or instructor@academy.eu" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="form-input" type="password" id="signin-password" placeholder="••••••••" />
+      </div>
+      <div class="text-danger fs-sm mb8" id="signin-error"></div>
+      <button class="btn-primary" style="width:100%" onclick="doSignIn()">Sign In</button>
+    </div>
+
+    <div id="auth-form-register" style="display:none">
+      <div class="form-group">
+        <label class="form-label">Full Name</label>
+        <input class="form-input" id="reg-name" placeholder="Your Full Name" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="form-input" type="email" id="reg-email" placeholder="you@university.eu" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="form-input" type="password" id="reg-password" placeholder="Create password" />
+      </div>
+      <div class="two-col" style="gap:10px">
+        <div class="form-group">
+          <label class="form-label">Account Role</label>
+          <select class="form-select" id="reg-role">
+            <option value="student">🎓 Student</option>
+            <option value="teacher">👨‍🏫 Instructor</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Target University</label>
+          <select class="form-select" id="reg-uni">
+            <option value="Politecnico di Milano">Politecnico di Milano</option>
+            <option value="Università di Padova">Università di Padova</option>
+            <option value="Università di Bologna">Università di Bologna</option>
+            <option value="Università di Pavia">Università di Pavia</option>
+          </select>
+        </div>
+      </div>
+      <div class="text-danger fs-sm mb8" id="reg-error"></div>
+      <button class="btn-primary" style="width:100%" onclick="doRegister()">Create Account</button>
+    </div>
+
+    <div style="height:1px;background:var(--border);margin:16px 0"></div>
+
+    <button class="google-btn" onclick="openGoogleOAuthModal()">
+      <svg width="18" height="18" viewBox="0 0 24 24">
+        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+      </svg>
+      Continue with Google
+    </button>
+  </div>
+</div>
+
+<!-- ── Styled Google OAuth 2.0 Account Chooser Modal (Synced with DB accounts!) ── -->
+<div class="modal-overlay" id="google-oauth-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" style="display:flex;align-items:center;gap:8px">
+        <svg width="20" height="20" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+        Choose a Google Account
+      </div>
+      <button class="modal-close" onclick="closeModal('google-oauth-modal')">&times;</button>
+    </div>
+
+    <div class="fs-sm text-muted mb8">Quick-select an account to sign in to CEnT-S &amp; IELTS LMS:</div>
+    <div class="google-acct-card" onclick="quickGoogleSelect('ali@student.eu', 'Ali Farzaneh', 'student')">
+      <div class="acct-avatar">AF</div>
+      <div>
+        <div class="fw700 fs-sm">Ali Farzaneh (Student Account)</div>
+        <div class="fs-sm text-muted">ali@student.eu</div>
+      </div>
+    </div>
+    <div class="google-acct-card" onclick="quickGoogleSelect('instructor@academy.eu', 'Dr. Lorenzoetti (Instructor)', 'teacher')">
+      <div class="acct-avatar" style="background:var(--success);color:#000">DL</div>
+      <div>
+        <div class="fw700 fs-sm">Dr. Lorenzoetti (Instructor Account — Code: CENTS2026)</div>
+        <div class="fs-sm text-muted">instructor@academy.eu</div>
+      </div>
+    </div>
+
+    <div style="height:1px;background:var(--border);margin:14px 0"></div>
+    <div class="fs-sm text-muted mb8">Or sign in with your custom Google account:</div>
+    <div class="form-group">
+      <label class="form-label">Google Email</label>
+      <input class="form-input" type="email" id="google-email-input" placeholder="your.name@gmail.com" />
+    </div>
+    <div class="two-col" style="gap:10px">
+      <div class="form-group">
+        <label class="form-label">Display Name</label>
+        <input class="form-input" id="google-name-input" placeholder="Full Name" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Role</label>
+        <select class="form-select" id="google-role-input">
+          <option value="student">Student</option>
+          <option value="teacher">Instructor</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn-primary" style="width:100%" onclick="submitGoogleOAuth()">Continue with Google Account</button>
+  </div>
+</div>
+
+<!-- ── Instructor's Student Diagnostic Report Modal ───────── -->
+<div class="modal-overlay" id="student-report-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div class="modal-title" id="student-report-title">Student Diagnostic Portfolio</div>
+      <button class="modal-close" onclick="closeModal('student-report-modal')">&times;</button>
+    </div>
+    <div id="student-report-content"></div>
+  </div>
+</div>
+
+
+<!-- ── Instructor 2-Column Interactive Grading Workbench Modal ── -->
+<div class="modal-overlay" id="grading-workbench-modal">
+  <div class="modal modal-lg" style="width:980px;max-width:96vw">
+    <div class="modal-header">
+      <div class="modal-title" id="workbench-title">Interactive Grading Workbench</div>
+      <button class="modal-close" onclick="closeModal('grading-workbench-modal')">&times;</button>
+    </div>
+    <div class="two-col" id="workbench-body"></div>
+  </div>
+</div>
+
+<!-- ── Assignment Item-Level Class Analytics Modal ────────── -->
+<div class="modal-overlay" id="item-analytics-modal">
+  <div class="modal modal-lg" style="width:860px;max-width:96vw">
+    <div class="modal-header">
+      <div class="modal-title" id="item-analytics-title">Class Item-Level Accuracy Matrix</div>
+      <button class="modal-close" onclick="closeModal('item-analytics-modal')">&times;</button>
+    </div>
+    <div id="item-analytics-body"></div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="app.js"></script>
+</body>
+</html>

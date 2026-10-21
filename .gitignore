@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+prep.db
+*.db-journal
+.env
+.venv/
+venv/
+upgrade_*.py
+update_*.py
+phase1_*.py
+roo-diagnostics-*.json
