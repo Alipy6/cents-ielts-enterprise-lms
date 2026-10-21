@@ -567,48 +567,58 @@ def auth_google():
     from werkzeug.security import generate_password_hash
 
     data = request.get_json(force=True) or {}
-    google_sub = data.get("google_sub") or "google_oauth_user"
     email = (data.get("email") or "").strip().lower()
-    name = (data.get("name") or "Google Student").strip()
+    name = (data.get("name") or "Google User").strip()
     avatar_url = data.get("avatar_url") or ""
     role = (data.get("role") or "student").strip().lower()
 
     if role not in ("student", "teacher"):
-        return jsonify({"error": "role must be 'student' or 'teacher'"}), 400
+        role = "student"
 
     if not email:
-        return jsonify({"error": "email is required"}), 400
+        return jsonify({"error": "Google email is required"}), 400
+
+    google_sub = data.get("google_sub") or f"google_{email}"
 
     con = _db()
-    row = con.execute("SELECT * FROM users WHERE google_sub = ?", (google_sub,)).fetchone()
+    try:
+        # 1. Check by email first (most reliable across seeded & OAuth users)
+        existing = con.execute("SELECT * FROM users WHERE LOWER(email) = ?", (email,)).fetchone()
+        if not existing:
+            existing = con.execute("SELECT * FROM users WHERE google_sub = ?", (google_sub,)).fetchone()
 
-    if row:
-        user_id = row["id"]
-    else:
-        existing = con.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
         if existing:
+            user_id = existing["id"]
+            invite_code = existing["invite_code"]
+            if role == "teacher" and not invite_code:
+                invite_code = "T-" + secrets.token_hex(3).upper()
+
             con.execute(
-                "UPDATE users SET google_sub = ?, auth_provider = 'google', avatar_url = ? WHERE id = ?",
-                (google_sub, avatar_url, existing["id"]),
+                """UPDATE users
+                   SET google_sub = ?, auth_provider = 'google', name = ?, role = ?, invite_code = ?, avatar_url = ?
+                   WHERE id = ?""",
+                (google_sub, name or existing["name"], role, invite_code, avatar_url, user_id),
             )
             con.commit()
-            user_id = existing["id"]
         else:
             pw_hash = generate_password_hash(google_sub, method="pbkdf2:sha256")
             invite_code = ("T-" + secrets.token_hex(3).upper()) if role == "teacher" else None
             cur = con.execute(
-                "INSERT INTO users (email, name, password_hash, auth_provider, google_sub, avatar_url, role, invite_code) "
-                "VALUES (?, ?, ?, 'google', ?, ?, ?, ?)",
+                """INSERT INTO users (email, name, password_hash, auth_provider, google_sub, avatar_url, role, invite_code)
+                   VALUES (?, ?, ?, 'google', ?, ?, ?, ?)""",
                 (email, name, pw_hash, google_sub, avatar_url, role, invite_code),
             )
             con.commit()
             user_id = cur.lastrowid
 
-    row = con.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
-    con.close()
+        row = con.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+        user_payload = _user_dict(row)
+    finally:
+        con.close()
 
+    session.permanent = True
     session["user_id"] = user_id
-    return jsonify(_user_dict(row))
+    return jsonify(user_payload), 200
 
 
 @app.route("/api/auth/logout", methods=["POST"])
