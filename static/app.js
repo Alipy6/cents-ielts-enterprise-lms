@@ -283,32 +283,61 @@ function doRegister() {
 
 function openGoogleOAuthModal() {
   closeModal("auth-modal");
+  var emailIn = document.getElementById("google-email-input");
+  var nameIn = document.getElementById("google-name-input");
+  if (emailIn && !emailIn.value) emailIn.value = "";
+  if (nameIn && !nameIn.value) nameIn.value = "";
   openModal("google-oauth-modal");
 }
 
 function quickGoogleSelect(email, name, role) {
-  document.getElementById("google-email-input").value = email;
-  document.getElementById("google-name-input").value = name;
-  document.getElementById("google-role-input").value = role;
-  submitGoogleOAuth();
+  var emailEl = document.getElementById("google-email-input");
+  var nameEl = document.getElementById("google-name-input");
+  var roleEl = document.getElementById("google-role-input");
+  if (emailEl) emailEl.value = email;
+  if (nameEl) nameEl.value = name;
+  if (roleEl) roleEl.value = role || "student";
+  submitGoogleOAuth(email, name, role);
 }
 
-function submitGoogleOAuth() {
-  var email = document.getElementById("google-email-input").value.trim();
-  var name = document.getElementById("google-name-input").value.trim() || "Google User";
-  var role = document.getElementById("google-role-input").value || "student";
-  if (!email) { showToast("Please enter or select a Google email.", "warning"); return; }
-  var sub = "google_oauth_" + btoa(email).replace(/=/g, "");
-  apiPost("/api/auth/google", { google_sub: sub, email: email, name: name, role: role }).then(function (data) {
+function submitGoogleOAuth(directEmail, directName, directRole) {
+  var emailEl = document.getElementById("google-email-input");
+  var nameEl = document.getElementById("google-name-input");
+  var roleEl = document.getElementById("google-role-input");
+
+  var email = (directEmail || (emailEl ? emailEl.value : "")).trim().toLowerCase();
+  var name = (directName || (nameEl ? nameEl.value : "")).trim();
+  var role = (directRole || (roleEl ? roleEl.value : "student")).trim().toLowerCase();
+
+  if (!email || email.indexOf("@") === -1) {
+    showToast("Please enter a valid Google email address (e.g. name@gmail.com).", "warning");
+    return;
+  }
+  if (!name) {
+    name = email.split("@")[0].replace(/[._-]/g, " ");
+    name = name.charAt(0).toUpperCase() + name.slice(1);
+  }
+
+  var safeSub = "google_oauth_" + email.replace(/[^a-z0-9]/gi, "_");
+
+  apiPost("/api/auth/google", {
+    google_sub: safeSub,
+    email: email,
+    name: name,
+    role: role
+  }).then(function (data) {
     if (data && (data.user_id || data.id)) {
       STATE.user = data;
       renderUserArea();
       closeModal("google-oauth-modal");
-      showToast("Authenticated with Google as " + data.name + "!", "success");
+      closeModal("auth-modal");
+      showToast("Signed in with Google as " + data.name + " (" + data.role.toUpperCase() + ")!", "success");
       showTab(data.role === "teacher" ? "teacher-roster" : "student-assignments");
     } else {
-      showToast(data.error || "Google auth failed.", "error");
+      showToast((data && data.error) ? data.error : "Google authentication failed.", "error");
     }
+  }).catch(function () {
+    showToast("Network error while connecting to Google Auth.", "error");
   });
 }
 
