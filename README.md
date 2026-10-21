@@ -7,6 +7,8 @@
 ![Deploy](https://img.shields.io/badge/Cloud_Ready-Render_%7C_Gunicorn-46E3B7)
 ![License](https://img.shields.io/badge/License-MIT-6366f1)
 
+[![Live Demo](https://img.shields.io/badge/🌐_Live_SaaS_Demo-cents--ielts--enterprise--lms.onrender.com-10b981?style=for-the-badge)](https://cents-ielts-enterprise-lms.onrender.com)
+
 A production-grade, multi-tenant **Learning Management System (LMS), Instructor Authoring Studio, and Diagnostic Assessment Engine** purpose-built for the **CISIA CEnT-S** university entrance examination (*Mathematics, Logic, Physics, Chemistry*) and **IELTS Academic** (*Reading & Writing*).
 
 ---
